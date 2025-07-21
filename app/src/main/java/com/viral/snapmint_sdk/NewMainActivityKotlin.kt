@@ -28,6 +28,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Random
+import java.util.concurrent.TimeUnit
 
 class NewMainActivityKotlin : AppCompatActivity() {
     private lateinit var binding: ActivityNewMainKotlinBinding
@@ -62,17 +63,20 @@ class NewMainActivityKotlin : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     private fun setUiData() = binding.apply {
         titanInfoButton.showSnapmintEmiInfo("4500", "4858/snap_titan.json")
-        etOrderValue.setText("4500")
-        etOrderValueCheckout.setText("4500")
-        etMobile.setText("7415630303")
-        etMerchantId.setText("2459")
-        etMerchantPassword.setText("DG9i2c_P")
-        etFirstName.setText("Giridhar")
-        etLastName.setText("Crawley")
+        etOrderValue.setText("1935")
+        etOrderValueCheckout.setText("1935")
+        etMobile.setText("8152041105")
+//        etMerchantId.setText("2459")
+        etMerchantId.setText("1456")
+        etMerchantPassword.setText("UOYY0R_n")
+//        etMerchantPassword.setText("DG9i2c_P")
+        etFirstName.setText("Manish")
+        etLastName.setText("T")
         etMerchantOrderId.setText("MELORRA-" + Random().nextInt())
-        etMerchantSuccessUrl.setText("http://www.vijaysales.com/success")
-        etMerchantFailureUrl.setText("http://www.vijaysales.com/failed")
-        etBaseUrl.setText("https://apis.qa.snapmint.com/api/pub/carts")
+        etMerchantSuccessUrl.setText("https://sf-sit-app.titan.co.in/payments/snapmint/success")
+        etMerchantFailureUrl.setText("https://sf-sit-app.titan.co.in/payments/snapmint/failure")
+//        etBaseUrl.setText("https://apis.qa.snapmint.com/api/pub/carts")
+        etBaseUrl.setText("https://pay.sandbox.snapmint.com/api/pub/carts")
         etSku.setText("abdx123")
         etUnitPrice.setText("1000")
         etQuantity.setText("5")
@@ -145,13 +149,16 @@ class NewMainActivityKotlin : AppCompatActivity() {
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val body = json.toRequestBody(mediaType)
 
-        val client = if (BuildConfig.DEBUG) {
-            OkHttpClient.Builder()
-                .addInterceptor(CurlLoggerInterceptor("cURL"))
-                .build()
-        } else {
-            OkHttpClient()
+        val clientBuilder = OkHttpClient.Builder()
+            .connectTimeout(120, TimeUnit.SECONDS) // Connection timeout
+            .readTimeout(120, TimeUnit.SECONDS)    // Server response timeout
+            .writeTimeout(120, TimeUnit.SECONDS)
+
+        if (BuildConfig.DEBUG) {
+            clientBuilder.addInterceptor(CurlLoggerInterceptor("cURL"))
         }
+
+        val client = clientBuilder.build()
 
         val request = Request.Builder()
             .url(baseUrl)

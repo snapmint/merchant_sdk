@@ -5,6 +5,9 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -182,6 +185,7 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
         binding.webView.setWebViewClient(new webClient());
         binding.webView.setWebChromeClient(new webChromeClient());
         binding.webView.loadUrl(url);
+        binding.webView.setLongClickable(true);
         binding.webView.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
                 WebView webView = (WebView) v;
@@ -194,7 +198,29 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
             }
             return false;
         });
+        binding.webView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                WebView.HitTestResult result = binding.webView.getHitTestResult();
+                if (result != null && result.getType() == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
+                    String url = result.getExtra();
+                    copyToClipboard(url);
+                    // Show dialog, share menu, etc.
+                    return true; // Consume the event
+                } else {
+                    return false; // Let WebView handle other long presses
+                }
+            }
+        });
 
+
+    }
+
+    private void copyToClipboard( String textToCopy) {
+        ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("label", textToCopy);
+        clipboard.setPrimaryClip(clip);
+        Toast.makeText(mContext, "Copied", Toast.LENGTH_SHORT).show();
     }
 
     public class webClient extends WebViewClient {
