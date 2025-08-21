@@ -67,7 +67,7 @@ publishing {
         release(MavenPublication) {
             groupId = 'com.github.snapmint'
             artifactId = 'merchant_sdk'
-            version = '1.0.32'
+            version = '1.0.33'
 
             afterEvaluate {
                 from components.release
