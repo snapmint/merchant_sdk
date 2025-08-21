@@ -117,6 +117,17 @@ public class EmiModel {
     @SerializedName("tenure_list")
     private List<TenureModel> tenureList;
 
+    @SerializedName("pop_up_list")
+    private List<PopUpListItem> popUpList;
+
+    public List<PopUpListItem> getPopUpList() {
+        return popUpList;
+    }
+
+    public void setPopUpList(List<PopUpListItem> popUpList) {
+        this.popUpList = popUpList;
+    }
+
     public String getEmiOnePercentage3Tenure() {
         return emiOnePercentage3Tenure;
     }

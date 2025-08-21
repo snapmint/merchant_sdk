@@ -16,6 +16,7 @@ import androidx.core.view.WindowCompat
 import com.snapmint.merchantsdk.api.CurlLoggerInterceptor
 import com.snapmint.merchantsdk.constants.SnapmintConfiguration
 import com.snapmint.merchantsdk.snapmintsdk.NewCheckoutWebViewActivity
+import com.snapmint.merchantsdk.utils.Utility
 import com.viral.snapmint_sdk.databinding.ActivityNewMainKotlinBinding
 import okhttp3.Call
 import okhttp3.Callback
@@ -34,6 +35,8 @@ class NewMainActivityKotlin : AppCompatActivity() {
     private lateinit var binding: ActivityNewMainKotlinBinding
     private lateinit var mContext: NewMainActivityKotlin
     private var progressBar: ProgressDialog? = null
+//    private var titanUrl = "4858/snap_titan.json"
+    private var titanUrl = "4858/Titan-updated.json"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +55,12 @@ class NewMainActivityKotlin : AppCompatActivity() {
 
     private fun initCLickListener() = binding.apply {
         btnChangeOrderValue.setOnClickListener {
-            titanInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), "4858/snap_titan.json")
+            if(etOrderValue.text.isNullOrEmpty()){
+                Toast.makeText(this@NewMainActivityKotlin,"Please enter order value", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            titanInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), etMerchantUrl.text.toString())
+            snapInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), etMerchantUrl.text.toString())
         }
         btnCheckOut.setOnClickListener {
             if (!isDataValidate()) return@setOnClickListener
@@ -62,9 +70,11 @@ class NewMainActivityKotlin : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun setUiData() = binding.apply {
-        titanInfoButton.showSnapmintEmiInfo("4500", "4858/snap_titan.json")
+        etMerchantUrl.setText(titanUrl)
         etOrderValue.setText("1935")
         etOrderValueCheckout.setText("1935")
+        titanInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), etMerchantUrl.text.toString())
+        snapInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), etMerchantUrl.text.toString())
         etMobile.setText("8152041105")
 //        etMerchantId.setText("2459")
         etMerchantId.setText("1456")
@@ -80,6 +90,7 @@ class NewMainActivityKotlin : AppCompatActivity() {
         etSku.setText("abdx123")
         etUnitPrice.setText("1000")
         etQuantity.setText("5")
+
     }
 
     private fun getNewJsonObject(): JSONObject {
@@ -213,20 +224,22 @@ class NewMainActivityKotlin : AppCompatActivity() {
         if (result.resultCode == RESULT_OK && result.data != null) {
             val data = result.data
             val status = data?.getStringExtra(SnapmintConfiguration.STATUS)
+            val responseData = data?.getStringExtra(SnapmintConfiguration.DATA)
             if (SnapmintConfiguration.SUCCESS.equals(status, ignoreCase = true)) {
                 Toast.makeText(this, "Payment Success", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Payment Failed", Toast.LENGTH_SHORT).show()
             }
+            showErrorDialog(responseData , isError = !SnapmintConfiguration.SUCCESS.equals(status, ignoreCase = true))
         }
     }
 
 
-    private fun showErrorDialog(message: String?) {
+    private fun showErrorDialog(message: String? , isError: Boolean=true) {
         runOnUiThread(Runnable {
             val builder = AlertDialog.Builder(mContext)
             builder.setMessage(message)
-            builder.setTitle("Error !")
+            builder.setTitle(if(isError) SnapmintConfiguration.FAILED else SnapmintConfiguration.SUCCESS)
             builder.setNegativeButton("Ok", DialogInterface.OnClickListener { dialog: DialogInterface?, which: Int ->
                 dialog?.cancel()
             }

@@ -1,6 +1,7 @@
 plugins {
     id "com.android.library"
     id "maven-publish"
+    id 'kotlin-android'
 }
 
 android {
@@ -66,7 +67,7 @@ publishing {
         release(MavenPublication) {
             groupId = 'com.github.snapmint'
             artifactId = 'merchant_sdk'
-            version = '1.0.31'
+            version = '1.0.32'
 
             afterEvaluate {
                 from components.release

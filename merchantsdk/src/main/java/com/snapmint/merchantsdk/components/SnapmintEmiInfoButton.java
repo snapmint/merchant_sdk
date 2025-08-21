@@ -1,14 +1,15 @@
 package com.snapmint.merchantsdk.components;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
-import android.net.Uri;
-import android.text.Html;
+import android.graphics.drawable.ColorDrawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.KeyEvent;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -24,36 +25,27 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.github.twocoffeesoneteam.glidetovectoryou.GlideToVectorYou;
-import com.snapmint.merchantsdk.JSBridge.CheckoutWebViewInterface;
 import com.snapmint.merchantsdk.R;
-import com.snapmint.merchantsdk.adapter.TermsAndConditionsAdapter;
 import com.snapmint.merchantsdk.api.ApiBuilder;
 import com.snapmint.merchantsdk.api.ApiServices;
-import com.snapmint.merchantsdk.constants.SnapmintConstants;
-import com.snapmint.merchantsdk.constants.SnapmintConfiguration;
 import com.snapmint.merchantsdk.models.EmiModel;
-import com.snapmint.merchantsdk.snapmintsdk.NewCheckoutWebViewActivity;
+import com.snapmint.merchantsdk.models.PopUpListItem;
+import com.snapmint.merchantsdk.models.TenureModel;
+import com.snapmint.merchantsdk.utils.EmiPopupUtils;
 import com.snapmint.merchantsdk.utils.Utility;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
-import java.util.Objects;
 import java.util.TimeZone;
 
 import retrofit2.Call;
@@ -61,7 +53,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickListener {
-
     private WebView emiWebView;
     private TextView tvPayment;
     private TextView tvCredit;
@@ -85,12 +76,12 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
     private boolean isEnable;
     private Double firstEmiAmount;
     private Double secondEmiAmount;
-    private LinearLayout llEnableView;
-    private LinearLayout llDisableView;
-    private LinearLayout llOfferView;
+    private Double thirdEmiAmount;
     private Double amountPayDisabled;
-    private List<String> termsList = new ArrayList<>();
     private EmiModel model = new EmiModel();
+    private Context mContext;
+    private WebView webView;
+    private PopUpListItem popupItem;
 
     public SnapmintEmiInfoButton(@NonNull Context context) {
         super(context);
@@ -107,28 +98,15 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
         init(context);
     }
 
-    public void showSnapmintEmiInfo(String orderValue, String merchantLink, boolean iEnable, String environment) {
+    public void showSnapmintEmiInfo(String orderValue, String merchantLink) {
         this.orderValue = orderValue;
         this.merchantLink = merchantLink;
-        this.isEnable = iEnable;
-        if (environment.equalsIgnoreCase(SnapmintConfiguration.QA)) {
-            SnapmintConstants.BASE_URL = SnapmintConstants.QA;
-            SnapmintConstants.CHECKOUT_BASE_URL = SnapmintConstants.QA_CHECKOUT_URL;
-        } else if (environment.equalsIgnoreCase(SnapmintConfiguration.PRE)) {
-            SnapmintConstants.BASE_URL = SnapmintConstants.PRE;
-            SnapmintConstants.CHECKOUT_BASE_URL = SnapmintConstants.PRE_CHECKOUT_URL;
-        } else if (environment.equalsIgnoreCase(SnapmintConfiguration.PROD)) {
-            SnapmintConstants.BASE_URL = SnapmintConstants.PROD;
-            SnapmintConstants.CHECKOUT_BASE_URL = SnapmintConstants.PROD_CHECKOUT_URL;
-        }
-        try {
-            getEmiInfo();
-        } catch (Exception e) {
-        }
+        getEmiInfo();
 
     }
 
     private void init(Context context) {
+        mContext = context;
         LayoutParams layoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         view = LayoutInflater.from(context).inflate(R.layout.snapmint_info_layout, this, true);
         tvPayment = findViewById(R.id.tvPayment);
@@ -148,9 +126,7 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
         ivSnapmintLogo = findViewById(R.id.ivSnapmintLogo);
         ivSnapmintText = findViewById(R.id.ivSnapmintText);
         ivReadMore = findViewById(R.id.ivReadMore);
-        llEnableView = findViewById(R.id.llEnableView);
-        llDisableView = findViewById(R.id.llDisableView);
-        llOfferView = findViewById(R.id.llOfferView);
+        LinearLayout llEnableView = findViewById(R.id.llEnableView);
         setOnClickListener(this);
         llEnableView.setOnClickListener(this);
         tvTnc.setOnClickListener(this);
@@ -166,7 +142,7 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
         }
     }
 
-    private String loadHtmlFromAsset(Context context,String fileName) {
+    private String loadHtmlFromAsset(Context context, String fileName) {
         try {
             InputStream inputStream = context.getAssets().open(fileName);
             int size = inputStream.available();
@@ -174,8 +150,7 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
             inputStream.read(buffer);
             inputStream.close();
             return new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return "";
         }
     }
@@ -186,19 +161,23 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setCancelable(true);
         dialog.setContentView(R.layout.dialog_snapmint_html_web_view);
-//        Objects.requireNonNull(dialog.getWindow()).setBackgroundDrawableResource(android.R.color.transparent);
-        WebView webView = dialog.findViewById(R.id.webView);
+
+        webView = dialog.findViewById(R.id.webView);
+        ProgressBar progressBar = dialog.findViewById(R.id.progressBar);
         Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
         String nextMonth = "";
         String secondMonth = "";
+        String thirdMonth = "";
         int nextMonthDay = 0;
         int secondMonthDay = 0;
+        int thirdMonthDay = 0;
         SimpleDateFormat monthFormat = new SimpleDateFormat("MMM");
         SimpleDateFormat dayFormat = new SimpleDateFormat("dd");
 
         try {
             Calendar cal = Calendar.getInstance();
             Calendar cal2 = Calendar.getInstance();
+            Calendar cal3 = Calendar.getInstance();
             int day = calendar.get(Calendar.DAY_OF_MONTH);
 
             // Calculate next month
@@ -211,171 +190,128 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
             secondMonth = monthFormat.format(cal2.getTime());
             secondMonthDay = Integer.parseInt(dayFormat.format(cal2.getTime()));
 
-        } catch (Exception e) {
-            e.printStackTrace();
+            // Calculate the month after next
+            cal3.add(Calendar.MONTH, day > 23 ? 4 : 3);
+            thirdMonth = monthFormat.format(cal3.getTime());
+            thirdMonthDay = Integer.parseInt(dayFormat.format(cal3.getTime()));
+
+        } catch (Exception ignored) {
         }
 
         if (webView != null) {
-            // Set up WebView and load HTML content
+            webView.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
+            WebSettings webSettings = webView.getSettings();
             webView.getSettings().setJavaScriptEnabled(true);
             webView.getSettings().setUseWideViewPort(true);
-            String htmlContent;
-            if(TextUtils.isEmpty(model.getEmiPopUp())){
-                htmlContent = loadHtmlFromAsset(dialog.getContext(), "snapmint_popup_content.html");
-            }else{
-                htmlContent = model.getEmiPopUp();
-            }
+            webSettings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+            webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+            webSettings.setDomStorageEnabled(true);
+            webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            String htmlContent = popupItem.getPopup();
+            if(TextUtils.isEmpty(htmlContent)) return;
             htmlContent = htmlContent.replace("{{down_payment_price}}", String.valueOf(amountPay.intValue()));
+            htmlContent = htmlContent.replace("{{pay_now_price}}", String.valueOf(amountPay.intValue()));
             htmlContent = htmlContent.replace("{{first_emi_date}}", String.valueOf(nextMonthDay));
             htmlContent = htmlContent.replace("{{first_emi_month}}", nextMonth);
-            htmlContent = htmlContent.replace("{{last_emi_date}}", String.valueOf(secondMonthDay));
-            htmlContent = htmlContent.replace("{{last_emi_month}}", secondMonth);
+            htmlContent = htmlContent.replace("{{second_emi_date}}", String.valueOf(secondMonthDay));
+            htmlContent = htmlContent.replace("{{second_emi_month}}", secondMonth);
+            htmlContent = htmlContent.replace("{{third_emi_date}}", String.valueOf(thirdMonthDay));
+            htmlContent = htmlContent.replace("{{third_emi_month}}", thirdMonth);
             htmlContent = htmlContent.replace("{{first_emi_price}}", String.valueOf(firstEmiAmount.intValue()));
-            htmlContent = htmlContent.replace("{{last_emi_price}}", String.valueOf(secondEmiAmount.intValue()));
+            htmlContent = htmlContent.replace("{{second_emi_price}}", String.valueOf(secondEmiAmount.intValue()));
+            htmlContent = htmlContent.replace("{{third_emi_price}}", String.valueOf(thirdEmiAmount.intValue()));
             htmlContent = htmlContent.replace("{{first_emi_suffix}}", Utility.getNumberSuffix(nextMonthDay));
-            htmlContent = htmlContent.replace("{{last_emi_suffix}}", Utility.getNumberSuffix(secondMonthDay));
+            htmlContent = htmlContent.replace("{{second_emi_suffix}}", Utility.getNumberSuffix(secondMonthDay));
+            htmlContent = htmlContent.replace("{{third_emi_suffix}}", Utility.getNumberSuffix(thirdMonthDay));
             htmlContent = htmlContent.replace("{{total_order_value}}", orderValue);
+            htmlContent = htmlContent.replace("http://", "https://");
+            if (model.getTenureList() != null && !model.getTenureList().isEmpty()) {
+                for (int i = 0; i < model.getTenureList().size(); i++) {
+                    TenureModel tenureModel = model.getTenureList().get(i);
+                    double tenureValue;
+                    if (tenureModel.getRoi() > 0) {
+                        tenureValue = (Double.parseDouble(orderValue) * tenureModel.getRoi()) / 100;
+                    } else {
+                        tenureValue = (Double.parseDouble(orderValue) - amountPay) / tenureModel.getTenure();
+                    }
+                    String[] tenureList = String.valueOf(tenureValue).split("\\.");
+                    if (tenureList.length > 1) {
+                        double pointValue = Double.parseDouble(tenureList[1]);
+                        if (pointValue > 0) {
+                            tenureValue = Double.parseDouble(tenureList[0]) + 1;
+                        }
+                    }
+                    htmlContent = htmlContent.replace("{{tenure_" + tenureModel.getTenure() + "}}", String.valueOf(Math.round(tenureValue)));
+                }
+            }
 
-            webView.addJavascriptInterface(new  MyWebJavaInterFace(dialog.getContext(),dialog),"Android");
-            webView.setWebViewClient(new WebViewClient(){
+            webView.addJavascriptInterface(new MyWebJavaInterFace(dialog), "Android");
+            webView.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                    // This method is called when a new URL is about to be loaded.
-                    // You can add your logic here if needed.
                     return super.shouldOverrideUrlLoading(view, request);
                 }
 
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    super.onPageFinished(view, url);
+                    progressBar.setVisibility(View.GONE);
+                    fadeIn(webView);
+                }
             });
-
             webView.loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null);
+
         }
         Window window = dialog.getWindow();
         if (window != null) {
-            // Set the dialog width to match the screen width
-            WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
-            layoutParams.copyFrom(window.getAttributes());
-            layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-//            layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-            window.setAttributes(layoutParams);
+            window.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT)); // Optional for a transparent background
+            WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+            params.gravity = Gravity.CENTER; // Center the dialog
+            window.setAttributes(params);
+            window.setDimAmount(0.5f);// Apply the animation style
         }
         dialog.show();
 
     }
+
+    private void fadeIn(View view) {
+        view.setAlpha(0f);
+        view.setVisibility(View.VISIBLE);
+        view.animate()
+                .alpha(1f)
+                .setDuration(300) // Animation duration in milliseconds
+                .setListener(null);
+    }
+
+    private void fadeOut(View view, Dialog mDialog) {
+        view.animate()
+                .alpha(0f)
+                .setDuration(300)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        view.setVisibility(View.INVISIBLE);
+                        mDialog.dismiss();
+                    }
+                });
+    }
+
     public class MyWebJavaInterFace extends AppCompatActivity {
-        private final Context mContext;
         private final Dialog mDialog;
-        MyWebJavaInterFace(Context context,Dialog dialog){
-            mContext = context;
+
+        MyWebJavaInterFace(Dialog dialog) {
             mDialog = dialog;
         }
 
-        // Other code...
-
-        // This method will be called from JavaScript
         @JavascriptInterface
         public void closePopup() {
-            // Add logic to close the popup in your Android code
             runOnUiThread(() -> {
-               if(mDialog!=null && mDialog.isShowing()){
-                   mDialog.dismiss();
-               }
+                if (mDialog != null && mDialog.isShowing()) {
+                    fadeOut(webView, mDialog);
+                }
             });
         }
     }
-/*
-    private void openSnapmintDialog(boolean isOffer, boolean isTAnC) {
-        final Dialog dialog = new Dialog(view.getContext());
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.dilog_snapmint);
-        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        dialog.show();
-        TextView txtDownpayment = dialog.findViewById(R.id.txtDownpayment);
-        TextView tvFirstEmi = dialog.findViewById(R.id.tvFirstEmi);
-        TextView tvSecondEmi = dialog.findViewById(R.id.tvSecondEmi);
-        TextView tvFirstMonth = dialog.findViewById(R.id.tvFirstMonth);
-        TextView tvSecondMonth = dialog.findViewById(R.id.tvSecondMonth);
-        TextView tvTAndC = dialog.findViewById(R.id.tvTAndC);
-        TextView tvTAndCTitle = dialog.findViewById(R.id.tvTAndCTitle);
-        TextView tvTAndCSubTitle = dialog.findViewById(R.id.tvTAndCSubTitle);
-        TextView tvFlatPercentage = dialog.findViewById(R.id.tvFlatPercentage);
-        TextView tvCashbackUpTo = dialog.findViewById(R.id.tvCashbackUpTo);
-        RelativeLayout relCross = dialog.findViewById(R.id.relCross);
-        RelativeLayout relOfferBack = dialog.findViewById(R.id.relOfferBack);
-        RelativeLayout relNonOfferBackLayout = dialog.findViewById(R.id.relNonOfferBackLayout);
-        RelativeLayout relOfferHeader = dialog.findViewById(R.id.relOfferHeader);
-        RelativeLayout relTermsView = dialog.findViewById(R.id.relTermsView);
-        ImageView ivTAndCLogo = dialog.findViewById(R.id.ivTAndCLogo);
-        LinearLayout llBackToPlans = dialog.findViewById(R.id.llBackToPlans);
-        LinearLayout llEmiPlansView = dialog.findViewById(R.id.llEmiPlansView);
-        relOfferHeader.setVisibility(isOffer && !isTAnC ? VISIBLE : GONE);
-        llEmiPlansView.setVisibility(!isTAnC ? VISIBLE : GONE);
-        relTermsView.setVisibility(isOffer && isTAnC ? VISIBLE : GONE);
-        relNonOfferBackLayout.setVisibility(!isOffer || isTAnC ? VISIBLE : GONE);
-        llBackToPlans.setVisibility(isOffer && isTAnC ? VISIBLE : GONE);
-        txtDownpayment.setText(Utility.setSingleDynamicValue(dialog.getContext(), R.string.rs_amount, String.valueOf(amountPay.intValue())));
-        if (firstEmiAmount != null)
-            tvFirstEmi.setText(Utility.setSingleDynamicValue(dialog.getContext(), R.string.rs_amount, String.valueOf(firstEmiAmount.intValue())));
-        if (secondEmiAmount != null)
-            tvSecondEmi.setText(Utility.setSingleDynamicValue(dialog.getContext(), R.string.rs_amount, String.valueOf(secondEmiAmount.intValue())));
-        Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
-        String nextMonth = "";
-        String secondMonth = "";
-        String outputPattern = "MMM";
-        Calendar cal = Calendar.getInstance();
-        Calendar cal2 = Calendar.getInstance();
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-        cal.add(Calendar.MONTH, day > 23 ? 2 : 1);
-        cal2.add(Calendar.MONTH, day > 23 ? 3 : 2);
-        @SuppressLint("SimpleDateFormat")
-        SimpleDateFormat outputFormat = new SimpleDateFormat(outputPattern);
-        try {
-            nextMonth = outputFormat.format(cal.getTime());
-            secondMonth = outputFormat.format(cal2.getTime());
-        } catch (Exception e) {
-        }
-        tvFirstMonth.setText(Html.fromHtml(Utility.setSingleDynamicValue(dialog.getContext(), R.string.third_month, nextMonth)));
-        tvSecondMonth.setText(Html.fromHtml(Utility.setSingleDynamicValue(dialog.getContext(), R.string.third_month, secondMonth)));
-        relCross.setOnClickListener(v -> dialog.dismiss());
-        relOfferBack.setOnClickListener(v -> dialog.dismiss());
-        if (isOffer) {
-            tvFlatPercentage.setText(model.getOfferPercentage());
-            tvTAndCTitle.setText(model.getTermsAndConditionsTitle());
-            tvTAndCSubTitle.setText(model.getTermsAndConditionsSubtitle());
-            tvCashbackUpTo.setText(model.getAvailableOffer().replace("T&C", ""));
-            if (!TextUtils.isEmpty(model.getTermsAndConditionsSnapmintLogo())) {
-                GlideToVectorYou.init().with(dialog.getContext()).load(Uri.parse(model.getTermsAndConditionsSnapmintLogo()), ivTAndCLogo);
-            }
-        }
-        tvTAndC.setOnClickListener(v -> {
-            relTermsView.setVisibility(VISIBLE);
-            relNonOfferBackLayout.setVisibility(VISIBLE);
-            llBackToPlans.setVisibility(VISIBLE);
-            relOfferHeader.setVisibility(GONE);
-            llEmiPlansView.setVisibility(GONE);
-        });
-        llBackToPlans.setOnClickListener(v -> {
-            relTermsView.setVisibility(GONE);
-            relNonOfferBackLayout.setVisibility(GONE);
-            llBackToPlans.setVisibility(GONE);
-            relOfferHeader.setVisibility(VISIBLE);
-            llEmiPlansView.setVisibility(VISIBLE);
-        });
-        if (isOffer) {
-            setTermsAndConditionList(dialog);
-        }
-
-    }
-*/
-
-    private void setTermsAndConditionList(Dialog dialog) {
-        RecyclerView recycleTAndC = dialog.findViewById(R.id.recycleTAndC);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(dialog.getContext());
-        recycleTAndC.setLayoutManager(linearLayoutManager);
-        TermsAndConditionsAdapter adapter = new TermsAndConditionsAdapter(termsList);
-        recycleTAndC.setAdapter(adapter);
-
-    }
-
 
     private void getEmiInfo() {
         double totalOrder = Double.parseDouble(orderValue);
@@ -387,76 +323,80 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                 try {
                     model = response.body();
                     if (model != null) {
-                        if (!TextUtils.isEmpty(model.getPayNowPercentage())) {
-                            amountPay = (totalOrder * Double.parseDouble(model.getPayNowPercentage()) / 100);
+                       popupItem = EmiPopupUtils.getEmiPopupListItem(mContext,totalOrder,model);
+
+                        if (popupItem!=null) {
+                            Double payNowPercentage = popupItem.getPayNowPercentage();
+                            Double emiPercentage = popupItem.getEmiPercentage();
+                            if (payNowPercentage!=null) {
+                                amountPay = (totalOrder * payNowPercentage / 100);
+                            }
                             double input = Math.floor(amountPay);
                             double afterDecimal = amountPay - input;
                             if (afterDecimal > 0) {
                                 amountPay = amountPay + 1;
                             }
-                        }
-                        if (!TextUtils.isEmpty(model.getPayNowPercentagePopUpDisable())) {
-                            amountPayDisabled = (totalOrder * Double.parseDouble(model.getPayNowPercentagePopUpDisable()) / 100);
-                            double input = Math.floor(amountPayDisabled);
-                            double afterDecimal = amountPayDisabled - input;
-                            if (afterDecimal > 0) {
-                                amountPayDisabled = amountPayDisabled + 1;
+                            if(emiPercentage!=null){
+                                firstEmiAmount =(totalOrder * emiPercentage) / 100;
+                                double inputEmi = Math.floor(firstEmiAmount);
+                                double afterDecimalEmi = firstEmiAmount - inputEmi;
+                                if (afterDecimalEmi > 0) {
+                                    firstEmiAmount = firstEmiAmount + 1;
+                                }
+
+                                secondEmiAmount = (totalOrder * emiPercentage) / 100;
+                                thirdEmiAmount = (totalOrder * emiPercentage)/ 100;
+                                double secInput = Math.floor(secondEmiAmount);
+                                double thirdInput = Math.floor(thirdEmiAmount);
+                                double secAfterDecimal = secondEmiAmount - secInput;
+                                double thirdAfterDecimal = thirdEmiAmount - thirdInput;
+
+                                if (secAfterDecimal > 0) {
+                                    secondEmiAmount = secondEmiAmount + 1;
+                                }
+                                if (thirdAfterDecimal > 0) {
+                                    thirdEmiAmount = thirdEmiAmount + 1;
+                                }
+                                double emiDisabledAmount = (totalOrder * Double.parseDouble(model.getEmiRatesPercentagePopUpDisable()) / 100);
+                                double emiDesInput = Math.floor(emiDisabledAmount);
+                                double secDesAfterDecimal = emiDisabledAmount - emiDesInput;
+                                if (secDesAfterDecimal > 0) {
+                                    emiDisabledAmount = emiDisabledAmount + 1;
+                                }
+                                setEmiWebView(model.getEmiWidget());
+
+                                tvPayment.setText(model.getPayNowText1Part1());
+                                tvPaymentText2.setText(model.getPayNowText1Part2().replace("pay_now", Utility.setSingleDynamicValue(view.getContext(), R.string.rs_amount, String.valueOf(amountPay.intValue()))));
+                                tvPaymentText3.setText(model.getPayNowText1Part3());
+                                tvPaymentText4.setText(model.getPayNowText1Part4());
+                                tvDisableText1.setText(model.getPayNowText1PopUpDisable());
+                                tvDisableText4.setText(model.getPayNowText2PopUpDisable().replace("pay_now", Utility.setSingleDynamicValue(view.getContext(), R.string.rs_amount, String.valueOf(amountPayDisabled.intValue()))));
+                                tvDisableText6.setText(model.getPayNowText3PopUpDisable().replace("emi_rate", String.valueOf((int) emiDisabledAmount)));
+                                tvDisableText8.setText(model.getPayNowText4PopUpDisable());
+                                Glide.with(view.getContext()).load(model.getPayNowText2()).into(ivSnapmint);
+                                Glide.with(view.getContext()).load(model.getPayNowImagePopUpDisable()).into(ivSnapmintLogo);
+                                Glide.with(view.getContext()).load(model.getPayNowImage1PopUpDisable()).into(ivSnapmintText);
+                                Glide.with(view.getContext()).load("https://assets.snapmint.com/assets/merchant/emitxt/green_dark_button.png").into(ivReadMore);
+                                tvCredit.setText(model.getPayNowText3());
+                                if (!TextUtils.isEmpty(model.getOfferPercentage()) && !TextUtils.isEmpty(model.getAvailableOffer())) {
+                                    tvFlatOffer.setText(model.getOfferPercentage());
+                                    ivReadMore.setVisibility(GONE);
+                                    tvCashbackUpTo.setText(model.getAvailableOffer().replace("T&C", ""));
+                                } else {
+                                    ivReadMore.setVisibility(VISIBLE);
+                                }
                             }
                         }
-                        firstEmiAmount = (totalOrder * Double.parseDouble(model.getEmiOnePercentage()) / 100);
-                        double input = Math.floor(firstEmiAmount);
-                        double afterDecimal = firstEmiAmount - input;
-                        if (afterDecimal > 0) {
-                            firstEmiAmount = firstEmiAmount + 1;
-                        }
-                        secondEmiAmount = (totalOrder * Double.parseDouble(model.getEmiSecondPercentage()) / 100);
-                        double secInput = Math.floor(secondEmiAmount);
-                        double secAfterDecimal = secondEmiAmount - secInput;
-                        if (secAfterDecimal > 0) {
-                            secondEmiAmount = secondEmiAmount + 1;
-                        }
-                        double emiDisabledAmount = (totalOrder * Double.parseDouble(model.getEmiRatesPercentagePopUpDisable()) / 100);
-                        double emiDesInput = Math.floor(emiDisabledAmount);
-                        double secDesAfterDecimal = emiDisabledAmount - emiDesInput;
-                        if (secDesAfterDecimal > 0) {
-                            emiDisabledAmount = emiDisabledAmount + 1;
-                        }
-                        setEmiWebView(model.getEmiWidget());
-                        tvPayment.setText(model.getPayNowText1Part1());
-                        tvPaymentText2.setText(model.getPayNowText1Part2().replace("pay_now", Utility.setSingleDynamicValue(view.getContext(), R.string.rs_amount, String.valueOf(amountPay.intValue()))));
-                        tvPaymentText3.setText(model.getPayNowText1Part3());
-                        tvPaymentText4.setText(model.getPayNowText1Part4());
-                        tvDisableText1.setText(model.getPayNowText1PopUpDisable());
-                        tvDisableText4.setText(model.getPayNowText2PopUpDisable().replace("pay_now", Utility.setSingleDynamicValue(view.getContext(), R.string.rs_amount, String.valueOf(amountPayDisabled.intValue()))));
-                        tvDisableText6.setText(model.getPayNowText3PopUpDisable().replace("emi_rate", String.valueOf((int) emiDisabledAmount)));
-                        tvDisableText8.setText(model.getPayNowText4PopUpDisable());
-                        Glide.with(view.getContext()).load(model.getPayNowText2()).into(ivSnapmint);
-                        Glide.with(view.getContext()).load(model.getPayNowImagePopUpDisable()).into(ivSnapmintLogo);
-                        Glide.with(view.getContext()).load(model.getPayNowImage1PopUpDisable()).into(ivSnapmintText);
-                        Glide.with(view.getContext()).load("https://assets.snapmint.com/assets/merchant/emitxt/green_dark_button.png").into(ivReadMore);
-                        tvCredit.setText(model.getPayNowText3());
-//                        llEnableView.setVisibility(isEnable ? View.VISIBLE : View.GONE);
-//                        llDisableView.setVisibility(isEnable ? View.GONE : View.VISIBLE);
-                        termsList = model.getOfferTermsAndConditions();
-//                        llOfferView.setVisibility(!TextUtils.isEmpty(model.getOfferPercentage()) && !TextUtils.isEmpty(model.getOfferPercentage()) ? VISIBLE : GONE);
-                        if (!TextUtils.isEmpty(model.getOfferPercentage()) && !TextUtils.isEmpty(model.getAvailableOffer())) {
-                            tvFlatOffer.setText(model.getOfferPercentage());
-                            ivReadMore.setVisibility(GONE);
-                            tvCashbackUpTo.setText(model.getAvailableOffer().replace("T&C", ""));
-                        }else{
-                            ivReadMore.setVisibility(VISIBLE);
-                        }
-
                     }
 
                 } catch (Exception e) {
-                    Log.e("TAG", "onFailure: "+e );
-                                    }
+                    Log.e("TAG", "onFailure: " + e);
+                }
             }
 
             @Override
             public void onFailure(@NonNull Call<EmiModel> call, @NonNull Throwable t) {
-                Log.e("TAG", "onFailure: "+t );
+                Log.e("TAG", "onFailure: " + t);
             }
         });
     }
@@ -468,11 +408,16 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
         webSettings.setUseWideViewPort(true);
         webSettings.setDomStorageEnabled(true);
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        if(TextUtils.isEmpty(emiWidget)){
-            emiWidget = "<style>.snap_emi_txt{text-align:center;justify-content:center;width:max-content;border-radius:10.9399px;position:relative;margin-bottom:5px;background:#fff;margin-bottom:10px;cursor:pointer}.snap-emi-inst{font-family:Inter,sans-serif;font-weight:700!important;font-size:18px;line-height:16px!important;color:#000!important;padding-top:4px!important;text-align:left;letter-spacing:normal}.snap-emi-inst b{font-weight:700!important}img.info-img{position:relative!important;top:-1px!important}.snap-emi-inst img,.snap-emi-inst span,.snap-emi-slogan img,.snap-emi-slogan span{display:inline-block!important;vertical-align:middle!important}.snap-emi-inst b,.snap-emi-slogan .snap_emi_slogan_text b{font-weight:700}.snap-emi-slogan{font-family:Inter,sans-serif;font-size:12.5px!important;line-height:16px!important;padding-bottom:6px!important;letter-spacing:normal;display:flex;justify-content:space-between;align-items:center;font-weight:400;color:#090909!important}.snap_widget_powered_text img{max-width:100px!important;width:70px!important}.snap_widget_powered_text{margin-left:0;margin-bottom:0;font-size:8px;color:#000;font-weight:500}.snap_emi_txt .snap_widget_powered_text img{margin-left:4px!important}.snap_buy_now_btn{width:62px!important;max-width:90px}.snap_padding_left{padding-left:3px}.snap_grey_dot{background:rgba(52,52,52,1);width:5px;height:5px;border-radius:50%}.snap_powered_text{font-size:8px;color:#878787}.snap_upi_widget_img{width:40px;max-width:90px;margin-bottom:-2px}.snap_emi_txt .snap_text_pink{color:#d90075}</style><div id='sm-widget-btn' class='snap_emi_txt snap_emi_txt_wrapper' onclick='startPop()'><div class='snap-emi-inst'>or 3 Monthly Payments of<span class='snap_text_pink'>₹{{down_payment_price}}</span></div><div class='snap-emi-slogan'><span><span class='snap_emi_slogan_text'><b>0%</b>EMI on</span><img src='https://preemi.snapmint.com/assets/whitelable/UPI-Logo-vector%201.svg' class='snap_upi_widget_img'></span><span><span class='snap_widget_powered_text'><span class='snap_grey_dot'></span><img src='https://assets.snapmint.com/assets/merchant/snapmint_logo_black_text.svg'></span></span><div><img src='https://assets.snapmint.com/assets/merchant/view_more_pink.svg' class='snap_buy_now_btn'></div></div></div>";
+        webSettings.setLoadWithOverviewMode(true);
+        webSettings.setBlockNetworkImage(false);
+        webSettings.setBlockNetworkLoads(false);
+        webSettings.setLoadsImagesAutomatically(true);
+        if (TextUtils.isEmpty(emiWidget)) {
+            emiWidget = loadHtmlFromAsset(mContext, "snap_emi_widget.html");
         }
         // Replace placeholder with amountPay value
         emiWidget = emiWidget.replace("{{down_payment_price}}", String.valueOf(amountPay.intValue()));
+        emiWidget = emiWidget.replace("{{pay_now_price}}", String.valueOf(amountPay.intValue()));
 
         // Set a WebViewClient to handle page loading events
         emiWebView.setWebViewClient(new WebViewClient() {
@@ -488,9 +433,17 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                 Log.d("WebView", "Page finished loading: " + url);
             }
         });
+        String modifiedHtml = " <html>" +
+                "<head>" +
+                "<meta name='viewport' content='width=device-width, initial-scale=1'>" +
+                "</head>" +
+                "<body> " +
+                emiWidget +
+                "</body>" +
+                "</html>";
 
-        emiWebView.loadDataWithBaseURL(null, emiWidget, "text/html", "UTF-8", null);
-        emiWebView.setOnTouchListener(new View.OnTouchListener() {
+        emiWebView.loadDataWithBaseURL(null, modifiedHtml, "text/html", "UTF-8", null);
+        emiWebView.setOnTouchListener(new OnTouchListener() {
             private float startX;
             private float startY;
 
@@ -507,8 +460,6 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                         float touchSlop = ViewConfiguration.get(v.getContext()).getScaledTouchSlop();
                         if (Math.abs(endX - startX) < touchSlop && Math.abs(endY - startY) < touchSlop) {
                             openSnapmintDialog(!TextUtils.isEmpty(model.getAvailableOffer()) && !TextUtils.isEmpty(model.getOfferPercentage()), false);
-                            // Click detected, handle the click event here
-                            // For example, you can load a URL or execute JavaScript
                             return true; // Consume the touch event
                         }
                         break;
@@ -517,7 +468,6 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
             }
         });
 
-        // Load HTML content into WebView
 
     }
 }

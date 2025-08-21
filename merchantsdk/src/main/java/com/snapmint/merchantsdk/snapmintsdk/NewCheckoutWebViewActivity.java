@@ -545,17 +545,18 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
 
     @Override
     public void orderSuccess(String data) {
-        Intent intent = new Intent();
-        intent.putExtra(SnapmintConfiguration.STATUS, SnapmintConfiguration.SUCCESS);
-        setResult(RESULT_OK, intent);
-        sendBroadcast(intent);
-        finish();
+        checkoutResultData(data,SnapmintConfiguration.SUCCESS);
     }
 
     @Override
-    public void orderFailed() {
+    public void orderFailed(String data) {
+        checkoutResultData(data,SnapmintConfiguration.FAILED);
+    }
+
+    public void checkoutResultData(String data , String status){
         Intent intent = new Intent();
-        intent.putExtra(SnapmintConfiguration.STATUS, SnapmintConfiguration.FAILED);
+        intent.putExtra(SnapmintConfiguration.STATUS, status);
+        intent.putExtra(SnapmintConfiguration.DATA, data);
         setResult(RESULT_OK, intent);
         sendBroadcast(intent);
         finish();

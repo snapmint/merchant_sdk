@@ -23,6 +23,25 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
+                android:layout_marginTop="30dp"
+                android:background="@drawable/snap_edit_text_default_background"
+                android:padding="10dp">
+
+                <androidx.appcompat.widget.AppCompatEditText
+                    android:id="@+id/etMerchantUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:background="@null"
+                    android:hint="Enter Merchant Url"
+                    android:textColor="@color/color_input"
+                    android:textSize="@dimen/layout_content_small" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/snap_edit_text_default_background"
                 android:padding="10dp">
@@ -51,6 +70,14 @@
 
             <com.snapmint.merchantsdk.components.SnapmintEmiInfoTitanButton
                 android:id="@+id/titanInfoButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:visibility="gone"
+                android:layout_marginBottom="20dp" />
+
+            <com.snapmint.merchantsdk.components.SnapmintEmiInfoButton
+                android:id="@+id/snapInfoButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
