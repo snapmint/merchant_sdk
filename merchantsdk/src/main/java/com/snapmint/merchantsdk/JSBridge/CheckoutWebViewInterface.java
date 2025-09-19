@@ -31,8 +31,16 @@ public class CheckoutWebViewInterface {
   }
 
   @JavascriptInterface
-  public static void closeWebView(String data) {
+  public static void closeWebView() {
     Log.d("CheckoutWebView", "closeWebView: ");
+    if (!mContext.isFinishing()) {
+      mContext.orderFailed("");
+    }
+  }
+
+  @JavascriptInterface
+  public static void orderFailed(String data) {
+    Log.d("CheckoutWebView", "orderFailed: " + data);
     if (!mContext.isFinishing()) {
       mContext.orderFailed(data);
     }

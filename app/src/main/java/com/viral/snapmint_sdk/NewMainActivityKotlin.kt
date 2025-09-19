@@ -194,6 +194,7 @@ class NewMainActivityKotlin : AppCompatActivity() {
                         dismissProgress()
                         if (jsonObject.has("url")) {
                             if (!isFinishing) {
+                                Log.d("MainActivity", "checkout Url: "+jsonObject.getString("url"))
                                 val intent = Intent(mContext, NewCheckoutWebViewActivity::class.java).apply {
                                     putExtra("redirect_url", jsonObject.getString("url"))
                                 }

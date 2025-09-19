@@ -556,7 +556,7 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
     public void checkoutResultData(String data , String status){
         Intent intent = new Intent();
         intent.putExtra(SnapmintConfiguration.STATUS, status);
-        intent.putExtra(SnapmintConfiguration.DATA, data);
+        if(!TextUtils.isEmpty(data))intent.putExtra(SnapmintConfiguration.DATA, data);
         setResult(RESULT_OK, intent);
         sendBroadcast(intent);
         finish();
