@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -18,22 +17,23 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <application
         android:allowBackup="true"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.Snapmint_sdk"
-        tools:replace="android:theme">
+        android:supportsRtl="true">
 
         <activity
             android:name=".snapmintsdk.MainActivity"
             android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Snapmint_sdk"
             android:configChanges="orientation|keyboardHidden|screenSize|locale|smallestScreenSize"
             android:screenOrientation="portrait" />
         <activity
             android:name=".snapmintsdk.SnapmintOrderCheckoutActivity"
+            android:theme="@style/Theme.Snapmint_sdk"
             android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait" />
         <activity
             android:name=".snapmintsdk.NewCheckoutWebViewActivity"
             android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Snapmint_sdk"
             android:configChanges="orientation|keyboardHidden|screenSize|locale|smallestScreenSize"
             android:screenOrientation="portrait" />
 
