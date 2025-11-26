@@ -20,18 +20,15 @@
         <activity
             android:name=".snapmintsdk.MainActivity"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.Snapmint_sdk"
             android:configChanges="orientation|keyboardHidden|screenSize|locale|smallestScreenSize"
             android:screenOrientation="portrait" />
         <activity
             android:name=".snapmintsdk.SnapmintOrderCheckoutActivity"
-            android:theme="@style/Theme.Snapmint_sdk"
             android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait" />
         <activity
             android:name=".snapmintsdk.NewCheckoutWebViewActivity"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.Snapmint_sdk"
             android:configChanges="orientation|keyboardHidden|screenSize|locale|smallestScreenSize"
             android:screenOrientation="portrait" />
 
