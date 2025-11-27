@@ -32,12 +32,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.bumptech.glide.Glide;
 import com.snapmint.merchantsdk.R;
 import com.snapmint.merchantsdk.api.ApiBuilder;
 import com.snapmint.merchantsdk.api.ApiServices;
 import com.snapmint.merchantsdk.models.EmiModel;
 import com.snapmint.merchantsdk.models.TenureModel;
+import com.snapmint.merchantsdk.utils.ImageLoader;
 import com.snapmint.merchantsdk.utils.Utility;
 
 import java.io.IOException;
@@ -419,10 +419,10 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
                         tvDisableText4.setText(model.getPayNowText2PopUpDisable().replace("pay_now", Utility.setSingleDynamicValue(view.getContext(), R.string.rs_amount, String.valueOf(amountPayDisabled.intValue()))));
                         tvDisableText6.setText(model.getPayNowText3PopUpDisable().replace("emi_rate", String.valueOf((int) emiDisabledAmount)));
                         tvDisableText8.setText(model.getPayNowText4PopUpDisable());
-                        Glide.with(view.getContext()).load(model.getPayNowText2()).into(ivSnapmint);
-                        Glide.with(view.getContext()).load(model.getPayNowImagePopUpDisable()).into(ivSnapmintLogo);
-                        Glide.with(view.getContext()).load(model.getPayNowImage1PopUpDisable()).into(ivSnapmintText);
-                        Glide.with(view.getContext()).load("https://assets.snapmint.com/assets/merchant/emitxt/green_dark_button.png").into(ivReadMore);
+                        ImageLoader.load(ivSnapmint, model.getPayNowText2());
+                        ImageLoader.load(ivSnapmintLogo, model.getPayNowImagePopUpDisable());
+                        ImageLoader.load(ivSnapmintText, model.getPayNowImage1PopUpDisable());
+                        ImageLoader.load(ivReadMore, "https://assets.snapmint.com/assets/merchant/emitxt/green_dark_button.png");
                         tvCredit.setText(model.getPayNowText3());
                         termsList = model.getOfferTermsAndConditions();
                         if (!TextUtils.isEmpty(model.getOfferPercentage()) && !TextUtils.isEmpty(model.getAvailableOffer())) {

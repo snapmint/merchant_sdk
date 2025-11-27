@@ -22,7 +22,6 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.snapmint.merchantsdk.R;
 import com.snapmint.merchantsdk.adapter.TermsAndConditionsAdapter;
 import com.snapmint.merchantsdk.api.ApiBuilder;
@@ -30,6 +29,7 @@ import com.snapmint.merchantsdk.api.ApiServices;
 import com.snapmint.merchantsdk.constants.SnapmintConfiguration;
 import com.snapmint.merchantsdk.constants.SnapmintConstants;
 import com.snapmint.merchantsdk.models.EmiModel;
+import com.snapmint.merchantsdk.utils.ImageLoader;
 import com.snapmint.merchantsdk.utils.Utility;
 
 import java.text.SimpleDateFormat;
@@ -184,10 +184,7 @@ public class SnapmintEmiInfoNNNowButton extends FrameLayout implements View.OnCl
             tvTAndCSubTitle.setText(model.getTermsAndConditionsSubtitle());
             tvCashbackUpTo.setText(model.getAvailableOffer().replace("T&C", ""));
             if (!TextUtils.isEmpty(model.getTermsAndConditionsSnapmintLogo())) {
-                Glide.with(dialog.getContext())
-                    .load(model.getTermsAndConditionsSnapmintLogo())
-                    .fitCenter()
-                    .into(ivTAndCLogo);
+                ImageLoader.load(ivTAndCLogo, model.getTermsAndConditionsSnapmintLogo());
             }
         }
         tvTAndC.setOnClickListener(v -> {
