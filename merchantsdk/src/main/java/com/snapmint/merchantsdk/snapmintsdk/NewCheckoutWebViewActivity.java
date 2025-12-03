@@ -53,8 +53,6 @@ import com.snapmint.merchantsdk.constants.SnapmintConfiguration;
 import com.snapmint.merchantsdk.databinding.ActivityNewCheckoutWebviewBinding;
 import com.snapmint.merchantsdk.utils.CheckoutResponse;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -70,8 +68,6 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
     public static final int REQUEST_SELECT_FILE = 100;
     private final static int FILE_CHOOSER_RESULTCODE = 1;
     private String redirectUrl;
-    private String status = SnapmintConfiguration.FAILED;
-    private String TAG = "NewCheckoutWebView";
 
     @SuppressLint("ObsoleteSdkInt")
     @Override
@@ -154,7 +150,6 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
                 newWebView.destroy();
                 newWebView = null;
             } else {
-                status = SnapmintConfiguration.FAILED;
                 Intent intent = new Intent();
                 intent.putExtra(SnapmintConfiguration.STATUS, SnapmintConfiguration.FAILED);
                 setResult(RESULT_OK, intent);
@@ -228,7 +223,9 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             try {
                 if ((url == null || url.startsWith("http://") || url.startsWith("https://") && !url.contains("/get_mitc_document?"))) {
-                    view.loadUrl(url);
+                    if(url!=null){
+                        view.loadUrl(url);
+                    }
                     return false;
                 }
                 try {
@@ -273,8 +270,7 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
                         }
                     }, 2000L);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception ignored) {
             }
         }
 
@@ -405,7 +401,9 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
         public void onCloseWindow(WebView window) {
             super.onCloseWindow(window);
             window.destroy();
-            newWebView.setVisibility(View.GONE);
+            if(newWebView != null){
+                newWebView.setVisibility(View.GONE);
+            }
             binding.webView.setVisibility(View.VISIBLE);
 
         }
@@ -473,8 +471,7 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
                         }
                     }, 2000L);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception ignored) {
             }
         }
     }
@@ -501,23 +498,6 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
         return true;
     }
 
-    private String generateCheckSum(String checkSumString) {
-        Log.d("STR", checkSumString);
-        String generatedCheckSum = "";
-        MessageDigest messageDigest = null;
-        try {
-            messageDigest = MessageDigest.getInstance("SHA-512");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        byte[] digest = messageDigest.digest(checkSumString.getBytes());
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < digest.length; i++) {
-            stringBuilder.append(Integer.toString((digest[i] & 0xff) + 0x100, 16).substring(1));
-        }
-        return stringBuilder.toString();
-    }
-
     @Override
     public void handlePaymentResponse(@Nullable String code, @Nullable String message) {
         Intent returnIntent = new Intent();
@@ -525,22 +505,6 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
         returnIntent.putExtra("status_msg", message);
         setResult(Activity.RESULT_OK, returnIntent);
         finish();
-    }
-
-    private void showErrorDialog(String message) {
-        runOnUiThread(() -> {
-            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-            builder.setMessage(message);
-            builder.setTitle("Error !");
-            builder.setNegativeButton("Ok", (dialog, which) -> {
-                        dialog.cancel();
-                        onBackPressed();
-                    }
-
-            );
-            AlertDialog alertDialog = builder.create();
-            alertDialog.show();
-        });
     }
 
     @Override
