@@ -72,6 +72,11 @@ public class SnapmintOrderCheckoutActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void setWebView() {
+        if(optionClicked == null){
+            Toast.makeText(this,"Something went wrong",Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         WebView.setWebContentsDebuggingEnabled(true);
         WebSettings webSettings = binding.webView.getSettings();
         webSettings.setUserAgentString(webSettings.getUserAgentString());
@@ -94,6 +99,11 @@ public class SnapmintOrderCheckoutActivity extends AppCompatActivity {
         binding.webView.setWebViewClient(new webClient());
         binding.webView.setWebChromeClient(new webChromeClient());
         if (optionClicked.equals("check_out")) {
+            if(PostData == null){
+                Toast.makeText(this,"Something went wrong",Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
             Log.d("CheckoutUrl", SnapmintConstants.CHECKOUT_BASE_URL);
             binding.webView.postUrl(SnapmintConstants.CHECKOUT_BASE_URL, PostData.getBytes());
         }
@@ -127,7 +137,9 @@ public class SnapmintOrderCheckoutActivity extends AppCompatActivity {
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             try {
                 if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
-                    view.loadUrl(url);
+                    if(url != null){
+                        view.loadUrl(url);
+                    }
                     return false;
                 }
                 try {
@@ -153,6 +165,7 @@ public class SnapmintOrderCheckoutActivity extends AppCompatActivity {
         public void onPageFinished(WebView view, final String url) {
             super.onPageFinished(view, url);
             String webUrl = view.getUrl();
+            if(webUrl==null) return;
             if (webUrl.equalsIgnoreCase(confirmationUrl)) {
                 if (!isSuccess) {
                     isSuccess = true;
@@ -234,8 +247,7 @@ public class SnapmintOrderCheckoutActivity extends AppCompatActivity {
                 } else {
                     request.grant(request.getResources());
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception ignored) {
             }
         }
 
@@ -243,6 +255,7 @@ public class SnapmintOrderCheckoutActivity extends AppCompatActivity {
         public void onProgressChanged(WebView view, int newProgress) {
             super.onProgressChanged(view, newProgress);
             String webUrl = view.getUrl();
+            if(webUrl==null)return;
             if (webUrl.equalsIgnoreCase(confirmationUrl)) {
                 if (!isSuccess) {
                     isSuccess = true;

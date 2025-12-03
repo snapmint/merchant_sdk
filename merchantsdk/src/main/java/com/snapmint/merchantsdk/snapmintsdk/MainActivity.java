@@ -83,6 +83,13 @@ public class MainActivity extends AppCompatActivity {
 
         // Getting values from intent passed from merchant app
         Bundle bundle = getIntent().getExtras();
+
+        if(bundle == null){
+            Toast.makeText(this,"Something went wrong",Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
         String PostData = bundle.getString(ApiConstant.DATA);
         String option_clicked = bundle.getString("option_clicked");
 
@@ -105,7 +112,17 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setAllowFileAccess(true);
         webView.addJavascriptInterface(new WebAppInterface(MainActivity.this), "Android");
 
+        if(option_clicked == null){
+            Toast.makeText(this,"Something went wrong",Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         if (option_clicked.equals("check_out")) {
+            if(PostData == null){
+                Toast.makeText(this,"Something went wrong",Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
             Log.d("CheckoutUrl", SnapmintConstants.CHECKOUT_BASE_URL);
             webView.postUrl(SnapmintConstants.CHECKOUT_BASE_URL,PostData.getBytes());
         }
