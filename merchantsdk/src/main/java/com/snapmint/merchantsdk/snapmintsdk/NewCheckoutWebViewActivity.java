@@ -3,7 +3,6 @@ package com.snapmint.merchantsdk.snapmintsdk;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -12,7 +11,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,7 +21,6 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.PermissionRequest;
-import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -161,7 +158,6 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
 
     @SuppressLint({"SetJavaScriptEnabled", "NewApi"})
     private void setWebView(String url) {
-        WebView.setWebContentsDebuggingEnabled(true);
         WebSettings webSettings = binding.webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
@@ -278,19 +274,6 @@ public class NewCheckoutWebViewActivity extends AppCompatActivity implements Che
         @Override
         public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
             super.onReceivedHttpError(view, request, errorResponse);
-        }
-
-        @SuppressLint("WebViewClientOnReceivedSslError")
-        @Override
-        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-            Log.d("NewCheckout", "onReceivedSslError: " + error);
-            final AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-            builder.setMessage(R.string.notification_error_ssl_cert_invalid);
-            builder.setPositiveButton("continue", (dialog, which) -> handler.proceed());
-            builder.setNegativeButton("cancel", (dialog, which) -> handler.cancel());
-            final AlertDialog dialog = builder.create();
-            if (dialog.isShowing()) return;
-            dialog.show();
         }
 
         @Override
