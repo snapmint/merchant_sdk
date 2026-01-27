@@ -1,0 +1,33 @@
+name: Security Scans
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gitleaks:
+    name: Gitleaks Scan
+    uses: snapmint/security-scan-workflows/.github/workflows/pr-gitleaks.yaml@main
+    secrets: inherit
+
+  trivy:
+    name: Trivy Scan
+    uses: snapmint/security-scan-workflows/.github/workflows/pr-trivy.yaml@main
+    secrets: inherit
+
+  sonarqube:
+    name: SonarQube Scan
+    uses: snapmint/security-scan-workflows/.github/workflows/pr-sonarqube.yaml@main
+    secrets: inherit    
+
+  shiftleft:  
+    name: ShiftLeft Scan
+    uses: snapmint/security-scan-workflows/.github/workflows/pr-scanshiftleft.yaml@main
+    secrets: inherit
