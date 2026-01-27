@@ -1,0 +1,161 @@
+name: Scheduled Security Scans
+
+on:
+  schedule:
+    # Every weekend (Fri, Sat, Sun) at 11:49 PM IST (18:19 UTC)
+    - cron: '15 3 * * 6'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gitleaks:
+    name: Gitleaks Scan
+    uses: snapmint/security-scan-workflows/.github/workflows/nightly-gitleaks.yaml@main
+    secrets: inherit
+
+  trivy:
+    name: Trivy Scan
+    uses: snapmint/security-scan-workflows/.github/workflows/nightly-trivy.yaml@main
+    secrets: inherit
+
+  sonarqube:
+    name: SonarQube Scan
+    uses: snapmint/security-scan-workflows/.github/workflows/nightly-sonarqube.yaml@main  
+    secrets: inherit
+
+  shiftleft:
+    name: ShiftLeft Scan
+    uses: snapmint/security-scan-workflows/.github/workflows/nightly-scanshiftleft.yaml@main
+    secrets: inherit
+
+  teams-notification:
+    name: Teams Alert on Failure
+    runs-on: ubuntu-latest
+    needs: [gitleaks, trivy, sonarqube, shiftleft]
+    if: always() && contains(needs.*.result, 'failure')
+    steps:
+      - name: Identify Failed Jobs
+        id: check-failures
+        run: |
+          failed_jobs=""
+          failure_details=""
+          
+          if [[ "${{ needs.gitleaks.result }}" == "failure" ]]; then
+            failed_jobs="${failed_jobs}Gitleaks, "
+            failure_details="${failure_details}🔍 **Gitleaks Scan Failed**: Secret detection scan found issues or encountered errors%0A"
+          fi
+          if [[ "${{ needs.trivy.result }}" == "failure" ]]; then
+            failed_jobs="${failed_jobs}Trivy, "
+            failure_details="${failure_details}🛡️ **Trivy Scan Failed**: Vulnerability scanning detected critical issues or errors%0A"
+          fi
+          if [[ "${{ needs.sonarqube.result }}" == "failure" ]]; then
+            failed_jobs="${failed_jobs}SonarQube, "
+            failure_details="${failure_details}📊 **SonarQube Scan Failed**: Code quality analysis failed or found critical issues%0A"
+          fi
+          if [[ "${{ needs.shiftleft.result }}" == "failure" ]]; then
+            failed_jobs="${failed_jobs}ShiftLeft, "
+            failure_details="${failure_details}⚡ **ShiftLeft Scan Failed**: Static analysis detected security vulnerabilities%0A"
+          fi
+          
+          # Remove trailing comma and space
+          failed_jobs=${failed_jobs%, }
+          
+          # Get current timestamp in IST
+          current_time=$(TZ='Asia/Kolkata' date '+%Y-%m-%d %I:%M:%S %p IST')
+          
+          echo "failed_jobs=$failed_jobs" >> $GITHUB_OUTPUT
+          echo "failure_details=$failure_details" >> $GITHUB_OUTPUT
+          echo "failure_time=$current_time" >> $GITHUB_OUTPUT
+          echo "Failed jobs: $failed_jobs"
+
+      - name: Send Teams Alert for Failed Jobs
+        uses: skitionek/notify-microsoft-teams@master
+        with:
+          webhook_url: ${{ secrets.SAST_SCAN_ALERT }}
+          overwrite: |
+            {
+              "@type": "MessageCard",
+              "@context": "http://schema.org/extensions",
+              "themeColor": "FF0000",
+              "summary": "🚨 Security Scan Failure Alert - ${{ github.repository }}",
+              "sections": [{
+                "activityTitle": "🚨 Security Scan Jobs Failed",
+                "activitySubtitle": "Critical security scan failures detected",
+                "activityImage": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                "facts": [
+                  {
+                    "name": "🏢 Repository",
+                    "value": "${{ github.repository }}"
+                  },
+                  {
+                    "name": "🌿 Branch", 
+                    "value": "${{ github.ref_name }}"
+                  },
+                  {
+                    "name": "⚡ Workflow",
+                    "value": "${{ github.workflow }}"
+                  },
+                  {
+                    "name": "🔗 Trigger",
+                    "value": "${{ github.event_name }}"
+                  },
+                  {
+                    "name": "❌ Failed Jobs",
+                    "value": "${{ steps.check-failures.outputs.failed_jobs }}"
+                  },
+                  {
+                    "name": "⏰ Failure Time",
+                    "value": "${{ steps.check-failures.outputs.failure_time }}"
+                  },
+                  {
+                    "name": "🆔 Run ID",
+                    "value": "${{ github.run_id }}"
+                  },
+                  {
+                    "name": "👤 Commit Author",
+                    "value": "${{ github.actor }}"
+                  },
+                  {
+                    "name": "📝 Last Commit",
+                    "value": "${{ github.event.head_commit.message }}"
+                  }
+                ],
+                "markdown": true
+              },
+              {
+                "activityTitle": "🔍 Failure Details",
+                "text": "${{ steps.check-failures.outputs.failure_details }}",
+                "markdown": true
+              },
+              {
+                "activityTitle": "🛠️ Next Steps",
+                "text": "1. **Review failed jobs** using the workflow link below%0A2. **Check error logs** for specific failure reasons%0A3. **Fix identified issues** in your code%0A4. **Re-run the workflow** or push new changes%0A5. **Contact DevSecOps team** if you need assistance",
+                "markdown": true
+              }],
+              "potentialAction": [{
+                "@type": "OpenUri",
+                "name": "🔍 View Failed Workflow",
+                "targets": [{
+                  "os": "default",
+                  "uri": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                }]
+              },
+              {
+                "@type": "OpenUri", 
+                "name": "📂 View Repository",
+                "targets": [{
+                  "os": "default",
+                  "uri": "${{ github.server_url }}/${{ github.repository }}"
+                }]
+              },
+              {
+                "@type": "OpenUri",
+                "name": "🌿 View Branch",
+                "targets": [{
+                  "os": "default", 
+                  "uri": "${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}"
+                }]
+              }]
+            }
