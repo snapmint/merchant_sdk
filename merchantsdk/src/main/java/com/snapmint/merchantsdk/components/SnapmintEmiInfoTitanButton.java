@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -25,7 +26,6 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -171,7 +171,6 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
         dialog.setContentView(R.layout.dialog_snapmint_html_web_view);
 
         webView = dialog.findViewById(R.id.webView);
-        ProgressBar progressBar = dialog.findViewById(R.id.progressBar);
         Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
         String nextMonth = "";
         String secondMonth = "";
@@ -210,6 +209,7 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
         if (webView != null) {
             // Set up WebView and load HTML content
             webView.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
+            webView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
             WebSettings webSettings = webView.getSettings();
             webView.getSettings().setJavaScriptEnabled(true);
             webView.getSettings().setUseWideViewPort(true);
@@ -265,9 +265,7 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
                 @Override
                 public void onPageFinished(WebView view, String url) {
                     super.onPageFinished(view, url);
-                    progressBar.setVisibility(View.GONE);
-//                    webView.setVisibility(View.VISIBLE);
-                    fadeIn(webView);
+                    resizeDialogWebView(view, dialog, 0, () -> fadeIn(webView));
                 }
             });
             webView.loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null);
@@ -283,6 +281,59 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
         }
         dialog.show();
 
+    }
+
+    private void resizeDialogWebView(WebView popupWebView, Dialog dialog, int attempt, Runnable onComplete) {
+        popupWebView.postDelayed(() -> popupWebView.evaluateJavascript(
+                "(function(){" +
+                        "var modal=document.querySelector('.modal-wrpr');" +
+                        "var body=document.body;" +
+                        "var doc=document.documentElement;" +
+                        "var modalHeight=modal?Math.max(modal.scrollHeight,modal.offsetHeight,modal.getBoundingClientRect().height):0;" +
+                        "return Math.max(modalHeight,body.scrollHeight,body.offsetHeight,doc.scrollHeight,doc.offsetHeight,doc.clientHeight);" +
+                        "})()",
+                value -> {
+                    DisplayMetrics displayMetrics = popupWebView.getResources().getDisplayMetrics();
+                    int minHeightPx = (int) (320 * displayMetrics.density);
+                    int maxHeightPx = (int) (displayMetrics.heightPixels * 0.85f);
+                    int jsHeightPx = 0;
+
+                    try {
+                        if (!TextUtils.isEmpty(value) && !"null".equals(value)) {
+                            String sanitizedValue = value.replace("\"", "");
+                            double cssHeight = Double.parseDouble(sanitizedValue);
+                            jsHeightPx = (int) Math.ceil(cssHeight * displayMetrics.density);
+                        }
+                    } catch (NumberFormatException exception) {
+                        Log.w("SnapmintEmiInfoTitan", "Unable to parse popup height", exception);
+                    }
+
+                    int webViewContentHeightPx = (int) Math.ceil(popupWebView.getContentHeight() * displayMetrics.density);
+                    int measuredHeightPx = Math.max(jsHeightPx, webViewContentHeightPx);
+                    int targetHeightPx = measuredHeightPx > 0 ? Math.max(measuredHeightPx, minHeightPx) : minHeightPx;
+                    targetHeightPx = Math.min(targetHeightPx, maxHeightPx);
+
+                    ViewGroup.LayoutParams layoutParams = popupWebView.getLayoutParams();
+                    if (layoutParams != null && layoutParams.height != targetHeightPx) {
+                        layoutParams.height = targetHeightPx;
+                        popupWebView.setLayoutParams(layoutParams);
+                        popupWebView.requestLayout();
+                    }
+
+                    Window window = dialog.getWindow();
+                    if (window != null) {
+                        window.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    }
+
+                    if (attempt < 4) {
+                        resizeDialogWebView(popupWebView, dialog, attempt + 1, onComplete);
+                        return;
+                    }
+
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                }), 120L);
     }
 
     private void fadeIn(View view) {
