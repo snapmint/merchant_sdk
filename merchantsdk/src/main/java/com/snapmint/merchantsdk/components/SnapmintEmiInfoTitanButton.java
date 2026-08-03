@@ -26,6 +26,7 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -88,6 +89,7 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
     private int dialogHeight = 460;
     private Context mContext;
     private WebView webView;
+    private ProgressBar progressBar;
 
     public SnapmintEmiInfoTitanButton(@NonNull Context context) {
         super(context);
@@ -171,6 +173,7 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
         dialog.setContentView(R.layout.dialog_snapmint_html_web_view);
 
         webView = dialog.findViewById(R.id.webView);
+        progressBar = dialog.findViewById(R.id.progressBar);
         Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
         String nextMonth = "";
         String secondMonth = "";
@@ -208,6 +211,7 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
 
         if (webView != null) {
             // Set up WebView and load HTML content
+            webView.setVisibility(View.INVISIBLE);
             webView.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
             webView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
             WebSettings webSettings = webView.getSettings();
@@ -265,7 +269,12 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
                 @Override
                 public void onPageFinished(WebView view, String url) {
                     super.onPageFinished(view, url);
-                    resizeDialogWebView(view, dialog, 0, () -> fadeIn(webView));
+                    resizeDialogWebView(view, dialog, () -> {
+                        if (progressBar != null) {
+                            progressBar.setVisibility(View.GONE);
+                        }
+                        fadeIn(webView);
+                    });
                 }
             });
             webView.loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null);
@@ -283,7 +292,7 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
 
     }
 
-    private void resizeDialogWebView(WebView popupWebView, Dialog dialog, int attempt, Runnable onComplete) {
+    private void resizeDialogWebView(WebView popupWebView, Dialog dialog, Runnable onComplete) {
         popupWebView.postDelayed(() -> popupWebView.evaluateJavascript(
                 "(function(){" +
                         "var modal=document.querySelector('.modal-wrpr');" +
@@ -325,15 +334,10 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
                         window.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                     }
 
-                    if (attempt < 4) {
-                        resizeDialogWebView(popupWebView, dialog, attempt + 1, onComplete);
-                        return;
-                    }
-
                     if (onComplete != null) {
                         onComplete.run();
                     }
-                }), 120L);
+                }), 180L);
     }
 
     private void fadeIn(View view) {
