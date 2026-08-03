@@ -55,6 +55,10 @@ import retrofit2.Response;
 import android.graphics.Color;
 
 public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickListener {
+    private static final int MAX_DIALOG_MEASURE_ATTEMPTS = 5;
+    private static final long INITIAL_DIALOG_MEASURE_DELAY_MS = 120L;
+    private static final long MAX_DIALOG_MEASURE_DELAY_MS = 1920L;
+
     private WebView emiWebView;
     private TextView tvPayment;
     private TextView tvCredit;
@@ -260,7 +264,7 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                 @Override
                 public void onPageFinished(WebView view, String url) {
                     super.onPageFinished(view, url);
-                    resizeDialogWebView(view, dialog, () -> {
+                    resizeDialogWebView(view, dialog, 0, () -> {
                         if (progressBar != null) {
                             progressBar.setVisibility(View.GONE);
                         }
@@ -283,7 +287,8 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
 
     }
 
-    private void resizeDialogWebView(WebView popupWebView, Dialog dialog, Runnable onComplete) {
+    private void resizeDialogWebView(WebView popupWebView, Dialog dialog, int attempt, Runnable onComplete) {
+        long delayMs = Math.min(INITIAL_DIALOG_MEASURE_DELAY_MS << attempt, MAX_DIALOG_MEASURE_DELAY_MS);
         popupWebView.postDelayed(() -> popupWebView.evaluateJavascript(
                 "(function(){" +
                         "var modal=document.querySelector('.modal-wrpr');" +
@@ -313,6 +318,12 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                     int targetHeightPx = measuredHeightPx > 0 ? Math.max(measuredHeightPx, minHeightPx) : minHeightPx;
                     targetHeightPx = Math.min(targetHeightPx, maxHeightPx);
 
+                    boolean shouldRetry = measuredHeightPx <= 0 && attempt < MAX_DIALOG_MEASURE_ATTEMPTS - 1;
+                    if (shouldRetry) {
+                        resizeDialogWebView(popupWebView, dialog, attempt + 1, onComplete);
+                        return;
+                    }
+
                     ViewGroup.LayoutParams layoutParams = popupWebView.getLayoutParams();
                     if (layoutParams != null && layoutParams.height != targetHeightPx) {
                         layoutParams.height = targetHeightPx;
@@ -328,7 +339,7 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                     if (onComplete != null) {
                         onComplete.run();
                     }
-                }), 180L);
+                }), delayMs);
     }
 
     private void fadeIn(View view) {
