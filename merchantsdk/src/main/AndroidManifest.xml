@@ -16,16 +16,6 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <application>
-
-        <activity
-            android:name=".snapmintsdk.MainActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="orientation|keyboardHidden|screenSize|locale|smallestScreenSize"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".snapmintsdk.SnapmintOrderCheckoutActivity"
-            android:windowSoftInputMode="adjustResize"
-            android:screenOrientation="portrait" />
         <activity
             android:name=".snapmintsdk.NewCheckoutWebViewActivity"
             android:windowSoftInputMode="adjustResize"
