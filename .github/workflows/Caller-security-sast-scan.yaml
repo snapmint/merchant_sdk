@@ -1,0 +1,16 @@
+name: Security Scans
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  call-central:
+    uses: snapmint/security-scan-workflows/.github/workflows/security-sast-scan.yaml@main
+    with:
+      repo: ${{ github.repository }}
+      ref: ${{ github.ref }}
+    secrets: inherit
