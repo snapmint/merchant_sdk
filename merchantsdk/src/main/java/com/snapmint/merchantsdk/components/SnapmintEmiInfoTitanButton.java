@@ -176,32 +176,27 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
         String nextMonth = "";
         String secondMonth = "";
         String thirdMonth = "";
-        int nextMonthDay = 0;
-        int secondMonthDay = 0;
-        int thirdMonthDay = 0;
+        int nextMonthDay = 3;
+        int secondMonthDay = 3;
+        int thirdMonthDay = 3;
         SimpleDateFormat monthFormat = new SimpleDateFormat("MMM");
-        SimpleDateFormat dayFormat = new SimpleDateFormat("dd");
 
         try {
-            Calendar cal = Calendar.getInstance();
-            Calendar cal2 = Calendar.getInstance();
-            Calendar cal3 = Calendar.getInstance();
             int day = calendar.get(Calendar.DAY_OF_MONTH);
+            int firstEmiMonthOffset = day > 23 ? 2 : 1;
 
-            // Calculate next month
-            cal.add(Calendar.MONTH, day > 23 ? 2 : 1);
+            Calendar cal = (Calendar) calendar.clone();
+            cal.add(Calendar.MONTH, firstEmiMonthOffset);
+            cal.set(Calendar.DAY_OF_MONTH, 3);
             nextMonth = monthFormat.format(cal.getTime());
-            nextMonthDay = Integer.parseInt(dayFormat.format(cal.getTime()));
 
-            // Calculate the month after next
-            cal2.add(Calendar.MONTH, day > 23 ? 3 : 2);
+            Calendar cal2 = (Calendar) cal.clone();
+            cal2.add(Calendar.MONTH, 1);
             secondMonth = monthFormat.format(cal2.getTime());
-            secondMonthDay = Integer.parseInt(dayFormat.format(cal2.getTime()));
 
-            // Calculate the month after next
-            cal3.add(Calendar.MONTH, day > 23 ? 4 : 3);
+            Calendar cal3 = (Calendar) cal2.clone();
+            cal3.add(Calendar.MONTH, 1);
             thirdMonth = monthFormat.format(cal3.getTime());
-            thirdMonthDay = Integer.parseInt(dayFormat.format(cal3.getTime()));
 
         } catch (Exception e) {
             e.printStackTrace();

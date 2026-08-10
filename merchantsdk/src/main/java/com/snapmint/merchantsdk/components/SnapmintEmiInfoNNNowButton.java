@@ -162,15 +162,18 @@ public class SnapmintEmiInfoNNNowButton extends FrameLayout implements View.OnCl
         String nextMonth = "";
         String secondMonth = "";
         String outputPattern = "MMM";
-        Calendar cal = Calendar.getInstance();
-        Calendar cal2 = Calendar.getInstance();
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-        cal.add(Calendar.MONTH, day > 23 ? 2 : 1);
-        cal2.add(Calendar.MONTH, day > 23 ? 3 : 2);
         @SuppressLint("SimpleDateFormat")
         SimpleDateFormat outputFormat = new SimpleDateFormat(outputPattern);
         try {
+            int day = calendar.get(Calendar.DAY_OF_MONTH);
+            int firstEmiMonthOffset = day > 23 ? 2 : 1;
+            Calendar cal = (Calendar) calendar.clone();
+            cal.add(Calendar.MONTH, firstEmiMonthOffset);
+            cal.set(Calendar.DAY_OF_MONTH, 3);
             nextMonth = outputFormat.format(cal.getTime());
+
+            Calendar cal2 = (Calendar) cal.clone();
+            cal2.add(Calendar.MONTH, 1);
             secondMonth = outputFormat.format(cal2.getTime());
         } catch (Exception e) {
         }
