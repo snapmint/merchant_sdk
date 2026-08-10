@@ -9,14 +9,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
+import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
-import com.snapmint.merchantsdk.api.CurlLoggerInterceptor
 import com.snapmint.merchantsdk.constants.SnapmintConfiguration
 import com.snapmint.merchantsdk.snapmintsdk.NewCheckoutWebViewActivity
-import com.snapmint.merchantsdk.utils.Utility
 import com.viral.snapmint_sdk.databinding.ActivityNewMainKotlinBinding
 import okhttp3.Call
 import okhttp3.Callback
@@ -35,12 +34,12 @@ class NewMainActivityKotlin : AppCompatActivity() {
     private lateinit var binding: ActivityNewMainKotlinBinding
     private lateinit var mContext: NewMainActivityKotlin
     private var progressBar: ProgressDialog? = null
-//    private var titanUrl = "4858/snap_titan.json"
     private var titanUrl = "4858/Titan-updated.json"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WebView.setWebContentsDebuggingEnabled(true)
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false)
         binding = ActivityNewMainKotlinBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -59,7 +58,6 @@ class NewMainActivityKotlin : AppCompatActivity() {
                 Toast.makeText(this@NewMainActivityKotlin,"Please enter order value", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            titanInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), etMerchantUrl.text.toString())
             snapInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), etMerchantUrl.text.toString())
         }
         btnCheckOut.setOnClickListener {
@@ -73,7 +71,6 @@ class NewMainActivityKotlin : AppCompatActivity() {
         etMerchantUrl.setText(titanUrl)
         etOrderValue.setText("1935")
         etOrderValueCheckout.setText("1935")
-        titanInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), etMerchantUrl.text.toString())
         snapInfoButton.showSnapmintEmiInfo(etOrderValue.text.toString(), etMerchantUrl.text.toString())
         etMobile.setText("8152041105")
 //        etMerchantId.setText("2459")
@@ -165,9 +162,6 @@ class NewMainActivityKotlin : AppCompatActivity() {
             .readTimeout(120, TimeUnit.SECONDS)    // Server response timeout
             .writeTimeout(120, TimeUnit.SECONDS)
 
-        if (BuildConfig.DEBUG) {
-            clientBuilder.addInterceptor(CurlLoggerInterceptor("cURL"))
-        }
 
         val client = clientBuilder.build()
 

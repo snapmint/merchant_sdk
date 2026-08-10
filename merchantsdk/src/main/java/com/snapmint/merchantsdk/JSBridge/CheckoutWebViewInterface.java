@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 public class CheckoutWebViewInterface {
 
   private static final String source = "MerchantAndroid";
-//  private static final String source = "Android";
   private static NewCheckoutWebViewActivity mContext;
 
   public CheckoutWebViewInterface(NewCheckoutWebViewActivity mContext) {
@@ -52,10 +51,6 @@ public class CheckoutWebViewInterface {
     if (!mContext.isFinishing()) {
       mContext.orderSuccess(data);
     }
-  }
-
-  interface OrderSuccessInterface {
-      void orderSuccess(String data);
   }
 
 }

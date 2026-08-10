@@ -29,14 +29,8 @@
             android:text="Change Order Value" />
 
 
-        <!--<com.snapmint.merchantsdk.components.SnapmintEmiInfoButton
+        <com.snapmint.merchantsdk.components.SnapmintEmiInfoButton
             android:id="@+id/snapmintButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp" />-->
-
-        <com.snapmint.merchantsdk.components.SnapmintEmiInfoTitanButton
-            android:id="@+id/titanInfoButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp" />

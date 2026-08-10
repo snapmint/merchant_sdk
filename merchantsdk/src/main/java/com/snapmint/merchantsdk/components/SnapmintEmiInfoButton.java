@@ -1,20 +1,17 @@
 package com.snapmint.merchantsdk.components;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -23,10 +20,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -40,7 +34,6 @@ import com.snapmint.merchantsdk.models.PopUpListItem;
 import com.snapmint.merchantsdk.models.TenureModel;
 import com.snapmint.merchantsdk.utils.DialogWebViewUtils;
 import com.snapmint.merchantsdk.utils.EmiPopupUtils;
-import com.snapmint.merchantsdk.utils.ImageLoader;
 import com.snapmint.merchantsdk.utils.Utility;
 
 import java.io.InputStream;
@@ -52,39 +45,18 @@ import java.util.TimeZone;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import android.graphics.Color;
 
 public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickListener {
     private WebView emiWebView;
-    private TextView tvPayment;
-    private TextView tvCredit;
-    private ImageView ivSnapmint;
-    private ImageView ivSnapmintLogo;
-    private ImageView ivSnapmintText;
-    private ImageView ivReadMore;
     private Double amountPay;
-    private View view;
-    private TextView tvPaymentText2;
-    private TextView tvPaymentText3;
-    private TextView tvPaymentText4;
-    private TextView tvDisableText1;
-    private TextView tvCashbackUpTo;
-    private TextView tvDisableText4;
-    private TextView tvFlatOffer;
-    private TextView tvDisableText6;
-    private TextView tvDisableText8;
     private String orderValue;
     private String merchantLink;
-    private boolean isEnable;
     private Double firstEmiAmount;
     private Double secondEmiAmount;
     private Double thirdEmiAmount;
-    private Double amountPayDisabled;
     private EmiModel model = new EmiModel();
     private Context mContext;
-    private WebView webView;
     private PopUpListItem popupItem;
-    private ProgressBar progressBar;
 
     public SnapmintEmiInfoButton(@NonNull Context context) {
         super(context);
@@ -110,39 +82,13 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
 
     private void init(Context context) {
         mContext = context;
-        LayoutParams layoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        view = LayoutInflater.from(context).inflate(R.layout.snapmint_info_layout, this, true);
-        tvPayment = findViewById(R.id.tvPayment);
-        tvPaymentText2 = findViewById(R.id.tvPaymentText2);
-        tvPaymentText3 = findViewById(R.id.tvPaymentText3);
-        tvPaymentText4 = findViewById(R.id.tvPaymentText4);
-        tvDisableText1 = findViewById(R.id.tvDisableText1);
-        tvCashbackUpTo = findViewById(R.id.tvCashbackUpTo);
-        tvDisableText4 = findViewById(R.id.tvDisableText4);
-        tvFlatOffer = findViewById(R.id.tvFlatOffer);
-        tvDisableText6 = findViewById(R.id.tvDisableText6);
-        tvDisableText8 = findViewById(R.id.tvDisableText8);
-        tvCredit = findViewById(R.id.tvCredit);
-        emiWebView = findViewById(R.id.emiWebView);
-        TextView tvTnc = findViewById(R.id.tvTnc);
-        ivSnapmint = findViewById(R.id.ivSnapmint);
-        ivSnapmintLogo = findViewById(R.id.ivSnapmintLogo);
-        ivSnapmintText = findViewById(R.id.ivSnapmintText);
-        ivReadMore = findViewById(R.id.ivReadMore);
-        LinearLayout llEnableView = findViewById(R.id.llEnableView);
-        setOnClickListener(this);
-        llEnableView.setOnClickListener(this);
-        tvTnc.setOnClickListener(this);
-
+        View view = LayoutInflater.from(context).inflate(R.layout.snapmint_info_layout, this, true);
+        emiWebView = view.findViewById(R.id.emiWebView);
     }
 
     @Override
     public void onClick(View view) {
-        if (view.getId() == R.id.llEnableView) {
-            openSnapmintDialog(!TextUtils.isEmpty(model.getAvailableOffer()) && !TextUtils.isEmpty(model.getOfferPercentage()), false);
-        } else if (view.getId() == R.id.tvTnc) {
-            openSnapmintDialog(!TextUtils.isEmpty(model.getAvailableOffer()) && !TextUtils.isEmpty(model.getOfferPercentage()), true);
-        }
+
     }
 
     private String loadHtmlFromAsset(Context context, String fileName) {
@@ -159,14 +105,14 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
     }
 
     @SuppressLint("SetJavaScriptEnabled,SimpleDateFormat")
-    private void openSnapmintDialog(boolean isOffer, boolean isTAnC) {
-        final Dialog dialog = new Dialog(view.getContext());
+    private void openSnapmintDialog() {
+        final Dialog dialog = new Dialog(getContext());
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setCancelable(true);
         dialog.setContentView(R.layout.dialog_snapmint_html_web_view);
 
-        webView = dialog.findViewById(R.id.webView);
-        progressBar = dialog.findViewById(R.id.progressBar);
+        WebView webView = dialog.findViewById(R.id.webView);
+        ProgressBar progressBar = dialog.findViewById(R.id.progressBar);
         Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
         String nextMonth = "";
         String secondMonth = "";
@@ -250,7 +196,7 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                 }
             }
 
-            webView.addJavascriptInterface(new MyWebJavaInterFace(dialog), "Android");
+            webView.addJavascriptInterface(new MyWebJavaInterFace(dialog, webView), "Android");
             webView.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -288,9 +234,11 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
 
     public class MyWebJavaInterFace extends AppCompatActivity {
         private final Dialog mDialog;
+        private final WebView webView;
 
-        MyWebJavaInterFace(Dialog dialog) {
+        MyWebJavaInterFace(Dialog dialog, WebView webView) {
             mDialog = dialog;
+            this.webView = webView;
         }
 
         @JavascriptInterface
@@ -307,18 +255,18 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
         double totalOrder = Double.parseDouble(orderValue);
         ApiServices retrofitAPI = ApiBuilder.create(ApiServices.class);
         Call<EmiModel> call = retrofitAPI.getMerchantDetail(merchantLink);
-        call.enqueue(new Callback<EmiModel>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<EmiModel> call, @NonNull Response<EmiModel> response) {
                 try {
                     model = response.body();
                     if (model != null) {
-                       popupItem = EmiPopupUtils.getEmiPopupListItem(mContext,totalOrder,model);
+                        popupItem = EmiPopupUtils.getEmiPopupListItem(mContext, totalOrder, model);
 
-                        if (popupItem!=null) {
+                        if (popupItem != null) {
                             Double payNowPercentage = popupItem.getPayNowPercentage();
                             Double emiPercentage = popupItem.getEmiPercentage();
-                            if (payNowPercentage!=null) {
+                            if (payNowPercentage != null) {
                                 amountPay = (totalOrder * payNowPercentage / 100);
                             }
                             double input = Math.floor(amountPay);
@@ -326,8 +274,8 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                             if (afterDecimal > 0) {
                                 amountPay = amountPay + 1;
                             }
-                            if(emiPercentage!=null){
-                                firstEmiAmount =(totalOrder * emiPercentage) / 100;
+                            if (emiPercentage != null) {
+                                firstEmiAmount = (totalOrder * emiPercentage) / 100;
                                 double inputEmi = Math.floor(firstEmiAmount);
                                 double afterDecimalEmi = firstEmiAmount - inputEmi;
                                 if (afterDecimalEmi > 0) {
@@ -335,7 +283,7 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                                 }
 
                                 secondEmiAmount = (totalOrder * emiPercentage) / 100;
-                                thirdEmiAmount = (totalOrder * emiPercentage)/ 100;
+                                thirdEmiAmount = (totalOrder * emiPercentage) / 100;
                                 double secInput = Math.floor(secondEmiAmount);
                                 double thirdInput = Math.floor(thirdEmiAmount);
                                 double secAfterDecimal = secondEmiAmount - secInput;
@@ -354,39 +302,16 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                                     emiDisabledAmount = emiDisabledAmount + 1;
                                 }
                                 setEmiWebView(model.getEmiWidget());
-
-                                tvPayment.setText(model.getPayNowText1Part1());
-                                tvPaymentText2.setText(model.getPayNowText1Part2().replace("pay_now", Utility.setSingleDynamicValue(view.getContext(), R.string.rs_amount, String.valueOf(amountPay.intValue()))));
-                                tvPaymentText3.setText(model.getPayNowText1Part3());
-                                tvPaymentText4.setText(model.getPayNowText1Part4());
-                                tvDisableText1.setText(model.getPayNowText1PopUpDisable());
-                                tvDisableText4.setText(model.getPayNowText2PopUpDisable().replace("pay_now", Utility.setSingleDynamicValue(view.getContext(), R.string.rs_amount, String.valueOf(amountPayDisabled.intValue()))));
-                                tvDisableText6.setText(model.getPayNowText3PopUpDisable().replace("emi_rate", String.valueOf((int) emiDisabledAmount)));
-                                tvDisableText8.setText(model.getPayNowText4PopUpDisable());
-                                ImageLoader.load(ivSnapmint, model.getPayNowText2());
-                                ImageLoader.load(ivSnapmintLogo, model.getPayNowImagePopUpDisable());
-                                ImageLoader.load(ivSnapmintText, model.getPayNowImage1PopUpDisable());
-                                ImageLoader.load(ivReadMore, "https://assets.snapmint.com/assets/merchant/emitxt/green_dark_button.png");
-                                tvCredit.setText(model.getPayNowText3());
-                                if (!TextUtils.isEmpty(model.getOfferPercentage()) && !TextUtils.isEmpty(model.getAvailableOffer())) {
-                                    tvFlatOffer.setText(model.getOfferPercentage());
-                                    ivReadMore.setVisibility(GONE);
-                                    tvCashbackUpTo.setText(model.getAvailableOffer().replace("T&C", ""));
-                                } else {
-                                    ivReadMore.setVisibility(VISIBLE);
-                                }
                             }
                         }
                     }
 
-                } catch (Exception e) {
-                    Log.e("TAG", "onFailure: " + e);
+                } catch (Exception ignored) {
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<EmiModel> call, @NonNull Throwable t) {
-                Log.e("TAG", "onFailure: " + t);
             }
         });
     }
@@ -408,21 +333,6 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
         // Replace placeholder with amountPay value
         emiWidget = emiWidget.replace("{{down_payment_price}}", String.valueOf(amountPay.intValue()));
         emiWidget = emiWidget.replace("{{pay_now_price}}", String.valueOf(amountPay.intValue()));
-
-        // Set a WebViewClient to handle page loading events
-        emiWebView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                super.onReceivedError(view, errorCode, description, failingUrl);
-                Log.e("WebView", "Error loading webpage: " + description);
-            }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                Log.d("WebView", "Page finished loading: " + url);
-            }
-        });
         String modifiedHtml = " <html>" +
                 "<head>" +
                 "<meta name='viewport' content='width=device-width, initial-scale=1'>" +
@@ -449,7 +359,7 @@ public class SnapmintEmiInfoButton extends FrameLayout implements View.OnClickLi
                         float endY = event.getY();
                         float touchSlop = ViewConfiguration.get(v.getContext()).getScaledTouchSlop();
                         if (Math.abs(endX - startX) < touchSlop && Math.abs(endY - startY) < touchSlop) {
-                            openSnapmintDialog(!TextUtils.isEmpty(model.getAvailableOffer()) && !TextUtils.isEmpty(model.getOfferPercentage()), false);
+                            openSnapmintDialog();
                             return true; // Consume the touch event
                         }
                         break;
