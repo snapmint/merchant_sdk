@@ -37,6 +37,7 @@ import com.snapmint.merchantsdk.api.ApiBuilder;
 import com.snapmint.merchantsdk.api.ApiServices;
 import com.snapmint.merchantsdk.models.EmiModel;
 import com.snapmint.merchantsdk.models.TenureModel;
+import com.snapmint.merchantsdk.utils.DialogWebViewUtils;
 import com.snapmint.merchantsdk.utils.ImageLoader;
 import com.snapmint.merchantsdk.utils.Utility;
 
@@ -54,7 +55,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnClickListener {
-
     private WebView emiWebView;
     private TextView tvPayment;
     private TextView tvCredit;
@@ -88,6 +88,7 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
     private int dialogHeight = 460;
     private Context mContext;
     private WebView webView;
+    private ProgressBar progressBar;
 
     public SnapmintEmiInfoTitanButton(@NonNull Context context) {
         super(context);
@@ -171,7 +172,7 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
         dialog.setContentView(R.layout.dialog_snapmint_html_web_view);
 
         webView = dialog.findViewById(R.id.webView);
-        ProgressBar progressBar = dialog.findViewById(R.id.progressBar);
+        progressBar = dialog.findViewById(R.id.progressBar);
         Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
         String nextMonth = "";
         String secondMonth = "";
@@ -204,7 +205,9 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
 
         if (webView != null) {
             // Set up WebView and load HTML content
+            webView.setVisibility(View.INVISIBLE);
             webView.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
+            webView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
             WebSettings webSettings = webView.getSettings();
             webView.getSettings().setJavaScriptEnabled(true);
             webView.getSettings().setUseWideViewPort(true);
@@ -260,9 +263,12 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
                 @Override
                 public void onPageFinished(WebView view, String url) {
                     super.onPageFinished(view, url);
-                    progressBar.setVisibility(View.GONE);
-//                    webView.setVisibility(View.VISIBLE);
-                    fadeIn(webView);
+                    DialogWebViewUtils.resizeDialogWebView(view, dialog, "SnapmintEmiInfoTitan", () -> {
+                        if (progressBar != null) {
+                            progressBar.setVisibility(View.GONE);
+                        }
+                        DialogWebViewUtils.fadeIn(webView);
+                    });
                 }
             });
             webView.loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null);
@@ -279,27 +285,8 @@ public class SnapmintEmiInfoTitanButton extends FrameLayout implements View.OnCl
         dialog.show();
 
     }
-
-    private void fadeIn(View view) {
-        view.setAlpha(0f);
-        view.setVisibility(View.VISIBLE);
-        view.animate()
-                .alpha(1f)
-                .setDuration(300) // Animation duration in milliseconds
-                .setListener(null);
-    }
-
     private void fadeOut(View view, Dialog mDialog) {
-        view.animate()
-                .alpha(0f)
-                .setDuration(300)
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        view.setVisibility(View.INVISIBLE);
-                        mDialog.dismiss();
-                    }
-                });
+        DialogWebViewUtils.fadeOut(view, mDialog);
     }
 
 
